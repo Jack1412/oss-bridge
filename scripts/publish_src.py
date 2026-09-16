@@ -35,7 +35,7 @@ from ossbridge.store import OssStore  # noqa: E402
 INCLUDE_FILES = ["README.md", "README.zh-CN.md", "LICENSE", "pyproject.toml", "requirements.txt"]
 INCLUDE_DIRS = ["ossbridge", "test", "scripts", "examples", "docs"]
 EXCLUDE_SUFFIX = (".pyc",)
-EXCLUDE_PARTS = ("__pycache__",)
+EXCLUDE_PARTS = ("__pycache__", ".ipynb_checkpoints", ".pytest_cache")
 TOP_DIR = "oss-bridge"
 KEEP_RELEASES = 5
 

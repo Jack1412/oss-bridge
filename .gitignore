@@ -16,6 +16,7 @@ dist/
 .venv/
 venv/
 .pytest_cache/
+.ipynb_checkpoints/
 .mypy_cache/
 
 # 编辑器 / 系统
