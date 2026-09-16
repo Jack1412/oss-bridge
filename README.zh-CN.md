@@ -62,7 +62,11 @@ python3 -m ossbridge.runner \
     --insecure-no-signature --state-dir ~/.oss-bridge/state
 ```
 
-长期运行建议用 [systemd 单元](examples/oss-bridge-runner.service)。
+不加 `--check` 时它是**前台常驻并持续轮询**的守护进程（空闲 2 秒、有任务 0.3 秒一轮），
+不是 cron 任务；必须一直运行，Agent 才能找到这台机器。长期运行建议用
+[systemd 单元](examples/oss-bridge-runner.service)，临时测试可以用 `nohup … &` 或 tmux。
+
+`--check` 与 `--print-config` 都是**一次性自检**：打印配置后立即退出，不会启动 runner。
 
 **本机**：把 MCP server 注册给你的 Agent（见下一节），然后让它调用 `remote_hosts`
 和 `remote_run`。

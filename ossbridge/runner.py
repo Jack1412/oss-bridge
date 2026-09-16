@@ -30,7 +30,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from . import __version__, naming, protocol
-from .config import Config, describe, load_config
+from .config import Config, clean_argv, describe, load_config
 from .protocol import Request, Result, SignatureError
 from .store import ObjectExists, OssStore
 
@@ -590,7 +590,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _build_parser().parse_args(argv)
+    args = _build_parser().parse_args(clean_argv(argv))
     logging.basicConfig(
         level=getattr(logging, args.log_level.upper(), logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",

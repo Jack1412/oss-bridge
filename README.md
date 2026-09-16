@@ -67,7 +67,13 @@ python3 -m ossbridge.runner \
     --insecure-no-signature --state-dir ~/.oss-bridge/state
 ```
 
-Keep it alive with the [systemd unit](examples/oss-bridge-runner.service).
+Without `--check` this runs in the **foreground and keeps polling** (2 s idle, 0.3 s while
+work is flowing) — it is a daemon, not a cron job, and it must stay running for the agent to
+reach the host. Keep it alive with the
+[systemd unit](examples/oss-bridge-runner.service), `nohup … &`, or `tmux`.
+
+`--check` and `--print-config` are one-shot diagnostics: they print the resolved
+configuration and exit, so the runner never starts.
 
 **Local machine** — register the MCP server with your agent (next section), then ask it to
 call `remote_hosts` and `remote_run`.

@@ -123,8 +123,21 @@ handy on machines where platform-injected STS tokens do not cover your bucket.
 | `InvalidArgument: max-keys must be an integer between 1 and 1000` | OSS caps `max-keys` at 1000; `store.list_keys` clamps it automatically. |
 | A job runs twice | Two runners share one `host_id`; give each `--instance` or a distinct state dir. |
 | `error: externally-managed-environment` (PEP 668) | Debian/Ubuntu system Python refuses direct pip installs. Use a virtualenv, `pip install --user --break-system-packages`, or install to a directory with `--target`. pip skips the check for `--target`, `--prefix` and `--root`; `remote_run.sh` relies on that and needs no install at all. |
+| `error: unrecognized arguments:` with a blank value | A multi-line command has a space after the trailing backslash, so the shell ends the command there and passes a lone space as an argument. Remove the space; the CLIs now ignore whitespace-only arguments and say so. |
 | `remote_hosts` shows nothing | The runner never reached OSS: check credentials, bucket and prefix on the remote side. |
 | Runner keeps restarting after an STS token expires | Long-lived daemons need long-lived credentials; STS tokens expire (typically in 24 h). |
+
+## Running the runner
+
+The runner is a long-lived foreground process, not a scheduled job: it polls
+`inbox/pending/` every `poll_interval_idle` seconds (2 by default) and drops to
+`poll_interval_active` (0.3 s) while it is executing something, and it rewrites its
+registry heartbeat every `heartbeat_interval` seconds. If it stops, hosts go offline in
+`remote_hosts` once the heartbeat lease expires.
+
+`--print-config` and `--check` are diagnostics that print and exit — handy as a first step on
+a new machine, but they never start polling. Keep the real process alive with systemd
+(`examples/oss-bridge-runner.service`), `nohup … &`, or `tmux`.
 
 ## Where configuration comes from
 

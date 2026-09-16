@@ -16,7 +16,7 @@ from typing import Any, Callable
 
 from . import __version__
 from .client import BridgeClient
-from .config import ConfigError, describe, load_config
+from .config import ConfigError, clean_argv, describe, load_config
 
 LOG = logging.getLogger("ossbridge.mcp")
 
@@ -302,7 +302,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _build_parser().parse_args(argv)
+    args = _build_parser().parse_args(clean_argv(argv))
     logging.basicConfig(
         level=getattr(logging, args.log_level.upper(), logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",

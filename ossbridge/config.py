@@ -16,6 +16,7 @@ import configparser
 import json
 import os
 import tomllib
+import sys
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -157,6 +158,21 @@ _ENV_MAP = {
     "OSS_BRIDGE_STATE_DIR": "state_dir",
     "OSS_BRIDGE_WORK_DIR": "work_dir",
 }
+
+
+def clean_argv(argv: list[str] | None) -> list[str]:
+    """过滤掉只含空白的参数。
+
+    多行命令里如果行尾的续行反斜杠后面多了一个空格，shell 会把那个空格当成一个独立参数
+    传进来，argparse 会报 "unrecognized arguments:  "（后面看起来是空的）。这里直接忽略，
+    避免用户对着一个看不见的空格排查半天。
+    """
+    source = sys.argv[1:] if argv is None else argv
+    filtered = [arg for arg in source if arg.strip()]
+    dropped = len(source) - len(filtered)
+    if dropped:
+        print(f"提示：已忽略 {dropped} 个空白参数（多行命令里 \\ 后可能多了空格）", file=sys.stderr)
+    return filtered
 
 
 def load_config(
