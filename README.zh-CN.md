@@ -110,10 +110,41 @@ args = [
 
 ## 配置
 
-两端都用 `--endpoint`、`--bucket`、`--prefix`（环境变量 `OSS_BRIDGE_ENDPOINT` /
-`OSS_BRIDGE_BUCKET` / `OSS_BRIDGE_PREFIX`），凭证来自 `--ossutil-config`、
-`--sts-token-file` 或 `--ak/--sk`。优先级：命令行 → 环境变量 → TOML 文件，
-所以 `--config examples/bridge.toml` 两端通用。
+凭证和目标是分开配置的，这一点最容易让人困惑：
+
+| 来源 | 包含什么 |
+|---|---|
+| ossutil 配置（`--ossutil-config`） | `endpoint`、`accessKeyID`、`accessKeySecret`——**没有 bucket** |
+| `--bucket`、`--prefix` | 用哪个 bucket，以及这个项目在它里面占哪个目录 |
+| `--state-dir` | runner 存放 `host_id` 和每个任务工作目录的地方 |
+
+ossutil 配置里没有 bucket，是因为 ossutil 把 bucket 写在 URL 里
+（`ossutil ls oss://my-bucket/...`），我们这里同理，所以要单独给 `--bucket`。
+文件格式：
+
+```ini
+[Credentials]
+language=CH
+endpoint=https://oss-cn-hangzhou.aliyuncs.com
+accessKeyID=LTAI...
+accessKeySecret=...
+```
+
+`--endpoint` 是**覆盖项而不是必需项**：如果配置文件里的 endpoint 就是你想要的，这个参数
+可以省掉。需要它是因为文件里那个地址未必能用——比如公网
+`oss-cn-hangzhou.aliyuncs.com`，它的 bucket 级域名依赖通配 DNS，部分容器解析不了，
+这时要覆盖成 `-internal` 内网地址。
+
+任何一项也都可以用环境变量或 TOML 文件提供（`OSS_BRIDGE_ENDPOINT` /
+`OSS_BRIDGE_BUCKET` / `OSS_BRIDGE_PREFIX`，或 `--config examples/bridge.toml`），
+命令行就能写得很短。
+
+想确认最终生效的是哪套配置、每个值来自哪里：
+
+```bash
+oss-bridge-runner --print-config        # 打印生效配置与来源，密钥打码
+oss-bridge-runner --check               # 再多做一次 OSS 连通性检查
+```
 
 模板：[bridge.env](examples/bridge.env.example) ·
 [bridge.toml](examples/bridge.toml) · [ram-policy.json](examples/ram-policy.json)
@@ -134,17 +165,15 @@ bucket，补齐了"能写 bucket"和"能执行命令"之间的鸿沟。
 - **用 `-internal` 内网 endpoint**：bucket 级公网域名依赖通配 DNS，部分容器解析不了。
 - **保持 bucket 未开启版本控制**，否则 `forbid-overwrite` 抢占原语失效，同一任务可能被
   两台 runner 重复执行。
-- 只支持传单个文件，目录请先打包。
-
-OSS 目录结构、抢占/租约协议与故障排查见 [docs/internals.md](docs/internals.md)。
+OSS 目录结构、抢占/租约协议、大小限制与故障排查见 [docs/internals.md](docs/internals.md)。
 
 ## 自更新部署
 
-不想往每台机器拷代码，可以把代码发布到 bucket，远端只跑一个引导脚本，重跑即更新：
+把代码发布到 bucket，远端重跑 `scripts/remote_run.sh` 即完成更新（脚本会校验并启动
+runner）：
 
 ```bash
 python3 scripts/publish_src.py --ossutil-config ~/.oss-bridge/ossutilconfig \
-    --endpoint oss-cn-hangzhou-internal.aliyuncs.com \
     --bucket your-bucket --prefix oss-bridge
 ```
 
@@ -152,15 +181,10 @@ python3 scripts/publish_src.py --ossutil-config ~/.oss-bridge/ossutilconfig \
 
 ## 开发
 
-测试会连接真实 bucket 并自行清理；未配置凭证时自动跳过。设置
-`OSS_BRIDGE_TEST_ENDPOINT`、`OSS_BRIDGE_TEST_BUCKET`、`OSS_BRIDGE_TEST_PREFIX`、
-`OSS_BRIDGE_TEST_OSSUTIL_CONFIG` 后：
-
-```bash
-python3 test/test_local_loop.py        # 执行/异步/超时/文件/抢占（16 项）
-python3 test/test_mcp_stdio.py         # MCP 握手与工具调用（8 项）
-python3 test/test_remote_workflow.py   # 发布 → 远程自举 → 执行（7 项）
-```
+测试会连接真实 bucket 并自行清理；未设置 `OSS_BRIDGE_TEST_ENDPOINT` /
+`OSS_BRIDGE_TEST_BUCKET` / `OSS_BRIDGE_TEST_OSSUTIL_CONFIG` 时自动跳过。随后运行
+`test/test_local_loop.py`（16 项：执行/异步/超时/文件/抢占）、`test/test_mcp_stdio.py`（8 项）
+或 `test/test_remote_workflow.py`（7 项）。
 
 ## 许可证
 

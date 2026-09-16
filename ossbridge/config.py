@@ -173,21 +173,33 @@ def load_config(
     输出：Config 实例（已 normalize）。
     """
     data: dict[str, Any] = {}
+    sources: dict[str, str] = {}  # 记录每个字段最终来自哪里，便于 --print-config 排查
+
+    def _merge(section: dict[str, Any], origin: str) -> None:
+        data.update(section)
+        for key in section:
+            sources[key] = origin
+
     if config_file:
-        data.update(_load_project_config(config_file))
+        _merge(_load_project_config(config_file), f"配置文件 {config_file}")
     if ossutil_config:
-        data.update(_load_ossutil_config(ossutil_config))
+        _merge(_load_ossutil_config(ossutil_config), f"ossutil 配置 {ossutil_config}")
     if sts_token_file:
-        data.update(_load_sts_token_file(sts_token_file))
+        _merge(_load_sts_token_file(sts_token_file), f"STS 凭证文件 {sts_token_file}")
     for env_key, field in _ENV_MAP.items():
         value = os.environ.get(env_key)
         if value:
             data[field] = value
-    data.update({k: v for k, v in (overrides or {}).items() if v is not None})
+            sources[field] = f"环境变量 {env_key}"
+    cli_values = {k: v for k, v in (overrides or {}).items() if v is not None}
+    data.update(cli_values)
+    for field in cli_values:
+        sources[field] = "命令行参数"
     if not data.get("secret") and secret_file:
         # 从文件读密钥，避免把密钥写进命令行（ps 可见）或环境变量
         with open(secret_file, "r", encoding="utf-8") as handle:
             data["secret"] = handle.read().strip()
+        sources["secret"] = f"密钥文件 {secret_file}"
 
     numeric_fields = {
         "poll_interval_idle": float,
@@ -207,4 +219,38 @@ def load_config(
     unknown = set(data) - known
     if unknown:
         raise ConfigError(f"未知配置项：{sorted(unknown)}")
-    return Config(**data).normalized()
+    cfg = Config(**data).normalized()
+    cfg.source_map = sources  # 供 describe() 使用
+    return cfg
+
+
+def _mask(value: str) -> str:
+    """把凭证打码后再展示。"""
+    if not value:
+        return "(未设置)"
+    return value[:4] + "…" + value[-2:] if len(value) > 8 else "(已设置)"
+
+
+def describe(cfg: Config) -> list[str]:
+    """生成"最终生效配置"的可读说明（不含密钥明文）。
+
+    输入：load_config 得到的 Config。输出：逐行文本，附带每个字段的来源。
+    """
+    sources: dict[str, str] = getattr(cfg, "source_map", {})
+
+    def origin(field: str, default: str = "内置默认值") -> str:
+        return sources.get(field, default)
+
+    return [
+        f"endpoint      = {cfg.endpoint or '(未设置)'}    ← {origin('endpoint')}",
+        f"bucket        = {cfg.bucket or '(未设置)'}    ← {origin('bucket')}",
+        f"prefix        = {cfg.prefix}    ← {origin('prefix')}",
+        f"access key id = {_mask(cfg.access_key_id)}    ← {origin('access_key_id')}",
+        f"sts token     = {'有' if cfg.security_token else '无'}    ← {origin('security_token')}",
+        f"state dir     = {cfg.state_dir}",
+        f"work dir      = {cfg.work_dir}",
+        f"签名校验      = {'开启' if cfg.require_signature else '关闭（--insecure-no-signature）'}"
+        f"    ← {origin('require_signature')}",
+        f"并发/超时     = concurrency={cfg.concurrency} poll_idle={cfg.poll_interval_idle}s "
+        f"max_output={cfg.max_output_bytes}B",
+    ]

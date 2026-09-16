@@ -16,7 +16,7 @@ from typing import Any, Callable
 
 from . import __version__
 from .client import BridgeClient
-from .config import ConfigError, load_config
+from .config import ConfigError, describe, load_config
 
 LOG = logging.getLogger("ossbridge.mcp")
 
@@ -293,6 +293,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--state-dir")
     parser.add_argument("--log-level", default="INFO")
+    parser.add_argument(
+        "--print-config",
+        action="store_true",
+        help="把最终生效的配置打印到 stderr 后退出（用于排查配置来源）",
+    )
     return parser
 
 
@@ -323,6 +328,10 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         LOG.error("配置错误：%s", exc)
         return 2
+    if args.print_config:
+        for line in describe(cfg):
+            print(line, file=sys.stderr)
+        return 0
     return McpServer(ToolBox(BridgeClient(cfg))).serve_forever()
 
 

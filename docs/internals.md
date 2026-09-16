@@ -126,6 +126,28 @@ handy on machines where platform-injected STS tokens do not cover your bucket.
 | `remote_hosts` shows nothing | The runner never reached OSS: check credentials, bucket and prefix on the remote side. |
 | Runner keeps restarting after an STS token expires | Long-lived daemons need long-lived credentials; STS tokens expire (typically in 24 h). |
 
+## Where configuration comes from
+
+Every setting can be supplied four ways. Later sources win:
+
+1. built-in defaults (`prefix=oss-bridge/`, `concurrency=2`, signing **on**)
+2. a TOML file passed with `--config`
+3. `--ossutil-config` and `--sts-token-file` (these contribute `endpoint` and credentials)
+4. environment variables, then CLI flags
+
+Two consequences worth remembering:
+
+* **`endpoint` usually comes from the ossutil config file.** Passing `--endpoint` overrides
+  it, which is what you want when that file names a public endpoint that the local resolver
+  cannot use.
+* **`bucket` and `prefix` never come from the ossutil config** — ossutil itself carries the
+  bucket in the URL, so there is nothing to read. They come from flags, environment
+  variables or the TOML file.
+
+`oss-bridge-runner --print-config` prints the merged result with the source of every field
+and masks credentials; `--check` adds a connectivity test. Both exit without starting the
+daemon, which makes them safe to run as a first step on a new host.
+
 ## Design notes
 
 The code is deliberately small and dependency-light: `oss2` is the only runtime

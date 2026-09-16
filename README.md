@@ -115,10 +115,41 @@ Two things worth knowing:
 
 ## Configuration
 
-Both sides take `--endpoint`, `--bucket` and `--prefix` (env:
-`OSS_BRIDGE_ENDPOINT` / `OSS_BRIDGE_BUCKET` / `OSS_BRIDGE_PREFIX`), plus credentials from
-`--ossutil-config`, `--sts-token-file`, or `--ak/--sk`. Precedence is CLI → env → TOML file,
-so `--config examples/bridge.toml` works on both sides.
+Credentials and target settings come from different places, which trips people up:
+
+| Where | What it holds |
+|---|---|
+| ossutil config (`--ossutil-config`) | `endpoint`, `accessKeyID`, `accessKeySecret` — and **no bucket** |
+| `--bucket`, `--prefix` | which bucket, and which directory inside it this project owns |
+| `--state-dir` | where the runner keeps its `host_id` and per-job working directories |
+
+A bucket is not in the ossutil config because ossutil takes it from the URL
+(`ossutil ls oss://my-bucket/...`); the same is true here, so `--bucket` is separate. The
+file looks like this:
+
+```ini
+[Credentials]
+language=CH
+endpoint=https://oss-cn-hangzhou.aliyuncs.com
+accessKeyID=LTAI...
+accessKeySecret=...
+```
+
+`--endpoint` is an *override*, not a requirement: if the file already has the endpoint you
+want, drop the flag. You need it when the file points somewhere unusable — for example a
+public endpoint like `oss-cn-hangzhou.aliyuncs.com`, whose bucket-style domains rely on
+wildcard DNS that some container resolvers refuse. Pass the `-internal` endpoint instead.
+
+Any setting can also come from an environment variable or a TOML file
+(`OSS_BRIDGE_ENDPOINT` / `OSS_BRIDGE_BUCKET` / `OSS_BRIDGE_PREFIX`, or
+`--config examples/bridge.toml`), which keeps the command line short.
+
+To see what actually took effect, and where each value came from:
+
+```bash
+oss-bridge-runner --print-config        # values + sources, secrets masked
+oss-bridge-runner --check               # the same, plus an OSS connectivity test
+```
 
 Templates: [bridge.env](examples/bridge.env.example) ·
 [bridge.toml](examples/bridge.toml) · [ram-policy.json](examples/ram-policy.json)
@@ -143,19 +174,16 @@ than the one they were addressed to.
   some container resolvers refuse.
 - **Keep bucket versioning disabled**, or the `forbid-overwrite` claim primitive is ignored
   and two runners may execute the same job.
-- Only single files are transferred — tar directories first.
-
-OSS layout, the claim/lease protocol and troubleshooting:
+OSS layout, the claim/lease protocol, size limits and troubleshooting:
 [docs/internals.md](docs/internals.md).
 
 ## Self-updating deployment
 
-Instead of copying code to every host, publish it to the bucket and re-run the bootstrap
-script on the remote side whenever you want the latest code:
+Publish the checkout to the bucket, then re-run `scripts/remote_run.sh` on the remote side
+whenever you want the latest code — it verifies the package and starts the runner:
 
 ```bash
 python3 scripts/publish_src.py --ossutil-config ~/.oss-bridge/ossutilconfig \
-    --endpoint oss-cn-hangzhou-internal.aliyuncs.com \
     --bucket your-bucket --prefix oss-bridge
 ```
 
@@ -163,15 +191,10 @@ See [docs/internals.md](docs/internals.md) for the remote side.
 
 ## Development
 
-Tests run against a real bucket, clean up after themselves, and skip without credentials.
-Set `OSS_BRIDGE_TEST_ENDPOINT`, `OSS_BRIDGE_TEST_BUCKET`, `OSS_BRIDGE_TEST_PREFIX` and
-`OSS_BRIDGE_TEST_OSSUTIL_CONFIG`, then:
-
-```bash
-python3 test/test_local_loop.py        # exec, async, timeout, files, claims (16 checks)
-python3 test/test_mcp_stdio.py         # MCP handshake and tool calls (8 checks)
-python3 test/test_remote_workflow.py   # publish -> bootstrap -> run (7 checks)
-```
+Tests run against a real bucket, clean up after themselves, and skip when
+`OSS_BRIDGE_TEST_ENDPOINT` / `OSS_BRIDGE_TEST_BUCKET` / `OSS_BRIDGE_TEST_OSSUTIL_CONFIG`
+are unset. Then run `test/test_local_loop.py` (16 checks: exec, async, timeout, files,
+claims), `test/test_mcp_stdio.py` (8) or `test/test_remote_workflow.py` (7).
 
 ## License
 

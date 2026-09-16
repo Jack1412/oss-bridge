@@ -30,7 +30,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from . import __version__, naming, protocol
-from .config import Config, load_config
+from .config import Config, describe, load_config
 from .protocol import Request, Result, SignatureError
 from .store import ObjectExists, OssStore
 
@@ -576,6 +576,16 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--concurrency", type=int)
     parser.add_argument("--duration", type=float, help="仅运行 N 秒后退出（自测用）")
     parser.add_argument("--log-level", default="INFO")
+    parser.add_argument(
+        "--print-config",
+        action="store_true",
+        help="打印最终生效的配置（含每项来源，密钥打码）后退出",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="打印配置并做一次 OSS 连通性检查后退出",
+    )
     return parser
 
 
@@ -604,6 +614,20 @@ def main(argv: list[str] | None = None) -> int:
             "concurrency": args.concurrency,
         },
     )
+    if args.print_config or args.check:
+        print("最终生效配置：", file=sys.stderr)
+        for line in describe(cfg):
+            print("  " + line, file=sys.stderr)
+        if args.check:
+            try:
+                store = OssStore(cfg)
+                keys = store.list_keys(cfg.prefix, max_keys=10)
+                print(f"  OSS 连通性  = OK（前缀下当前有 {len(keys)} 个对象）", file=sys.stderr)
+            except Exception as exc:
+                print(f"  OSS 连通性  = 失败：{type(exc).__name__}: {exc}", file=sys.stderr)
+                return 1
+        return 0
+
     runner = Runner(cfg, host_id=args.host_id, instance=args.instance)
 
     def _handle_signal(signum, _frame):
