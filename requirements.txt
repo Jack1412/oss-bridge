@@ -1,0 +1,2 @@
+# 运行依赖只有 oss2；MCP server 是最小实现，不需要官方 mcp SDK
+oss2>=2.16.0

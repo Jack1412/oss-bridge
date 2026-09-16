@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oss-bridge"
+dynamic = ["version"]
+description = "MCP server that turns an Alibaba Cloud OSS bucket into a job queue and file staging area, so a local agent can run commands on remote machines without SSH or open ports."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "The oss-bridge Authors" }]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "oss",
+    "aliyun",
+    "object-storage",
+    "remote-execution",
+    "agent",
+    "codex",
+    "claude",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = ["oss2>=2.16.0"]
+
+[project.urls]
+Homepage = "https://github.com/OWNER/oss-bridge"
+Repository = "https://github.com/OWNER/oss-bridge"
+Issues = "https://github.com/OWNER/oss-bridge/issues"
+
+[project.scripts]
+oss-bridge-agent = "ossbridge.mcp_server:main"
+oss-bridge-runner = "ossbridge.runner:main"
+
+[tool.setuptools]
+packages = ["ossbridge"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ossbridge.__version__" }

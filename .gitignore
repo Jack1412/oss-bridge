@@ -1,0 +1,25 @@
+# 本地密钥与个人配置
+secret.local
+*.ossutilconfig
+bridge.env
+config.local.toml
+
+# 内部进展归档（含环境细节，不随仓库公开）
+/doc/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+*.swp
