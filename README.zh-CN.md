@@ -146,8 +146,9 @@ oss-bridge-runner --print-config        # 打印生效配置与来源，密钥�
 oss-bridge-runner --check               # 再多做一次 OSS 连通性检查
 ```
 
-模板：[bridge.env](examples/bridge.env.example) ·
-[bridge.toml](examples/bridge.toml) · [ram-policy.json](examples/ram-policy.json)
+模板：[ossutilconfig](examples/ossutilconfig.example) ·
+[bridge.env](examples/bridge.env.example) · [bridge.toml](examples/bridge.toml) ·
+[ram-policy.json](examples/ram-policy.json)
 
 ## 安全
 

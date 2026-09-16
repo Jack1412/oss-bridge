@@ -1,0 +1,34 @@
+# ossutil 配置文件示例（同时也是本项目的凭证来源）
+#
+# 这个文件只包含 endpoint 与凭证，**不含 bucket**。
+# ossutil 把 bucket 写在 URL 里（`ossutil ls oss://my-bucket/path`），
+# 所以本项目需要另外用 --bucket / --prefix 指定。
+#
+# 用法：
+#   cp examples/ossutilconfig.example ~/.oss-bridge/ossutilconfig
+#   chmod 600 ~/.oss-bridge/ossutilconfig
+#   oss-bridge-runner --ossutil-config ~/.oss-bridge/ossutilconfig \
+#       --bucket my-bucket --prefix oss-bridge --insecure-no-signature
+#
+# 安全提醒：这是明文密钥文件，不要提交进 git、不要放进镜像。
+# 本仓库的 .gitignore 已忽略 *.ossutilconfig，示例文件用的是 .example 后缀。
+
+[Credentials]
+language=CH
+
+# OSS endpoint。内网机器建议用 -internal 域名：
+# 公网 endpoint 的 bucket 级域名（oss-cn-hangzhou.aliyuncs.com）依赖通配 DNS，
+# 部分容器解析器会拒绝，表现为 "No address associated with hostname"。
+endpoint=oss-cn-hangzhou-internal.aliyuncs.com
+
+# 长期 AK/SK。建议用只有该 bucket 前缀权限的 RAM 子账号，
+# 权限模板见 examples/ram-policy.json。
+accessKeyID=LTAI5txxxxxxxxxxxxxxxx
+accessKeySecret=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 如果要用 STS 临时凭证，改成下面三行。注意临时凭证会过期（通常 24 小时），
+# 长期运行的 runner 建议用长期 AK；也可以不写在这里，改为给程序传
+# --sts-token-file /path/to/token.json（或设置 OSS_BRIDGE_STS_TOKEN_FILE）。
+# accessKeyID=STS.Nxxxxxxxxxxxxxxxxxxxxxxxx
+# accessKeySecret=xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# stsToken=CAISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

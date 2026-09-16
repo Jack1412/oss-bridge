@@ -151,8 +151,9 @@ oss-bridge-runner --print-config        # values + sources, secrets masked
 oss-bridge-runner --check               # the same, plus an OSS connectivity test
 ```
 
-Templates: [bridge.env](examples/bridge.env.example) ·
-[bridge.toml](examples/bridge.toml) · [ram-policy.json](examples/ram-policy.json)
+Templates: [ossutilconfig](examples/ossutilconfig.example) ·
+[bridge.env](examples/bridge.env.example) · [bridge.toml](examples/bridge.toml) ·
+[ram-policy.json](examples/ram-policy.json)
 
 ## Security
 

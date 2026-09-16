@@ -142,7 +142,8 @@ Two consequences worth remembering:
   cannot use.
 * **`bucket` and `prefix` never come from the ossutil config** — ossutil itself carries the
   bucket in the URL, so there is nothing to read. They come from flags, environment
-  variables or the TOML file.
+  variables or the TOML file. A ready-to-copy credential file is in
+  [examples/ossutilconfig.example](../examples/ossutilconfig.example).
 
 `oss-bridge-runner --print-config` prints the merged result with the source of every field
 and masks credentials; `--check` adds a connectivity test. Both exit without starting the

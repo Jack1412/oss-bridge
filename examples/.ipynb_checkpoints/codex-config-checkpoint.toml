@@ -1,0 +1,15 @@
+# 追加到 ~/.codex/config.toml
+#
+# 用 pip 安装后可以直接用控制台命令 oss-bridge-agent；
+# 从源码运行则用 python3 -m ossbridge.mcp_server（需要 cwd 指向仓库根目录）。
+
+[mcp_servers.oss_bridge]
+command = "oss-bridge-agent"
+args = [
+  "--endpoint", "oss-cn-hangzhou-internal.aliyuncs.com",
+  "--bucket", "your-bucket",
+  "--prefix", "oss-bridge",
+  "--ossutil-config", "/home/USER/.oss-bridge/ossutilconfig",
+  # 私有目录可以关掉签名校验；要开启就去掉这行并加上 --secret-file
+  "--insecure-no-signature",
+]
