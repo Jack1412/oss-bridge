@@ -32,7 +32,7 @@ oss-bridge 是一个 [MCP](https://modelcontextprotocol.io) 服务：把一个�
 ## 安装
 
 ```bash
-pip install oss-bridge        # 发布到 PyPI 之后
+pip install oss-bridge        # 或 pipx install oss-bridge
 
 # 或者从源码安装
 git clone https://github.com/Jack1412/oss-bridge && cd oss-bridge
@@ -42,9 +42,17 @@ pip install -e .
 会提供两个命令：`oss-bridge-agent`（本机 MCP server）与 `oss-bridge-runner`（远端守护）。
 也可以直接 `python3 -m ossbridge.mcp_server` / `-m ossbridge.runner`。
 
+> **远端机器可以不安装。** runner 直接在代码目录里跑，
+> [`scripts/remote_run.sh`](scripts/remote_run.sh) 会把唯一依赖装进本地 `vendor/` 目录，
+> 不碰系统 Python、不需要 sudo。
+>
+> Debian/Ubuntu 上 pip 可能报 `error: externally-managed-environment`（PEP 668）。
+> 用虚拟环境，或者装到家目录：`pip install --user --break-system-packages -e .`。
+> 该参数只影响安装位置（`~/.local`），不会动系统包。
+
 ## 快速开始
 
-**远程机器**：启动守护进程（它会自动注册并开始轮询）：
+**远程机器**：启动守护进程（无需安装，它会自动注册并开始轮询）：
 
 ```bash
 python3 -m ossbridge.runner \

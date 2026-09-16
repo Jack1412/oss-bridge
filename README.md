@@ -35,7 +35,7 @@ interactive or streaming sessions.
 ## Install
 
 ```bash
-pip install oss-bridge        # once published to PyPI
+pip install oss-bridge        # or: pipx install oss-bridge
 
 # or from source
 git clone https://github.com/Jack1412/oss-bridge && cd oss-bridge
@@ -45,9 +45,19 @@ pip install -e .
 Gives you two commands: `oss-bridge-agent` (local MCP server) and `oss-bridge-runner`
 (remote daemon). `python3 -m ossbridge.mcp_server` / `-m ossbridge.runner` work too.
 
+> **Installing is optional on the remote host.** The runner runs straight from a checkout,
+> and [`scripts/remote_run.sh`](scripts/remote_run.sh) installs its only dependency into a
+> local `vendor/` directory — no system packages touched, no `sudo`.
+>
+> On Debian/Ubuntu, pip may refuse with `error: externally-managed-environment` (PEP 668).
+> Either use a virtualenv, or install into your home directory:
+> `pip install --user --break-system-packages -e .`. The flag only affects where packages
+> go (`~/.local`) — it does not touch system packages.
+
 ## Quick start
 
-**Remote host** — start the daemon (it registers itself and begins polling):
+**Remote host** — start the daemon (it registers itself and begins polling; no install
+needed):
 
 ```bash
 python3 -m ossbridge.runner \

@@ -122,6 +122,7 @@ handy on machines where platform-injected STS tokens do not cover your bucket.
 | Claiming never succeeds | Bucket versioning is enabled, which disables `x-oss-forbid-overwrite`. |
 | `InvalidArgument: max-keys must be an integer between 1 and 1000` | OSS caps `max-keys` at 1000; `store.list_keys` clamps it automatically. |
 | A job runs twice | Two runners share one `host_id`; give each `--instance` or a distinct state dir. |
+| `error: externally-managed-environment` (PEP 668) | Debian/Ubuntu system Python refuses direct pip installs. Use a virtualenv, `pip install --user --break-system-packages`, or install to a directory with `--target`. pip skips the check for `--target`, `--prefix` and `--root`; `remote_run.sh` relies on that and needs no install at all. |
 | `remote_hosts` shows nothing | The runner never reached OSS: check credentials, bucket and prefix on the remote side. |
 | Runner keeps restarting after an STS token expires | Long-lived daemons need long-lived credentials; STS tokens expire (typically in 24 h). |
 

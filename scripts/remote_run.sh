@@ -92,12 +92,34 @@ creds_args_of() {
     esac
 }
 
-# ---------- 2. 保证 oss2 可用 ----------
-if ! PYTHONPATH="$VENDOR_DIR" python3 -c "import oss2" >/dev/null 2>&1; then
-    log "本地没有 oss2，尝试安装到 $VENDOR_DIR"
-    python3 -m pip install --quiet --target "$VENDOR_DIR" oss2 >&2 \
-        || die "oss2 安装失败，请手动执行：python3 -m pip install oss2"
-fi
+# ---------- 2. 保证 oss2 可用（不污染系统 Python，绕开 PEP 668）----------
+# 说明：Debian/Ubuntu 新版 Python 标记了 EXTERNALLY-MANAGED，直接 pip install 会报
+# externally-managed-environment。pip 官方规定 --target/--prefix/--root 不触发该检查，
+# 所以这里优先把依赖装进本地 vendor 目录，再退化为 venv。
+VENV_DIR="$SRC_ROOT/venv"
+PYTHON_BIN="${OSS_BRIDGE_PYTHON:-python3}"
+
+ensure_oss2() {
+    PYTHONPATH="$VENDOR_DIR${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON_BIN" -c "import oss2" >/dev/null 2>&1 && return 0
+    log "未检测到 oss2，尝试安装到 $VENDOR_DIR（--target 不受 PEP 668 限制）"
+    local err
+    if err=$(python3 -m pip install --quiet --target "$VENDOR_DIR" oss2 2>&1); then
+        return 0
+    fi
+    log "  --target 方式失败：$(printf '%s' "$err" | tail -n 2 | tr '\n' ' ')"
+    log "  改用 venv：$VENV_DIR"
+    if python3 -m venv "$VENV_DIR" >/dev/null 2>&1 \
+        && "$VENV_DIR/bin/python" -m pip install --quiet oss2 >/dev/null 2>&1; then
+        PYTHON_BIN="$VENV_DIR/bin/python"
+        return 0
+    fi
+    die "oss2 安装失败，请手动任选一种：
+      1) pip install --user --break-system-packages oss2      # 只写 ~/.local，不动系统包
+      2) python3 -m venv ~/oss-bridge-venv && ~/oss-bridge-venv/bin/pip install oss2
+         （Debian/Ubuntu 若报缺 venv，先 sudo apt install python3-venv）
+      3) pip install --target $VENDOR_DIR oss2 && export PYTHONPATH=$VENDOR_DIR"
+}
+ensure_oss2
 export PYTHONPATH="$VENDOR_DIR${PYTHONPATH:+:$PYTHONPATH}"
 export OSS_BUCKET OSS_PREFIX OSS_ENDPOINT SRC_ROOT
 
@@ -107,7 +129,7 @@ CHOSEN_CRED=""
 if [ "$NO_UPDATE" != "1" ]; then
     for candidate in "${CANDIDATES[@]}"; do
         log "尝试用 ${candidate%%:*} 凭证拉取代码"
-        if NEW_DIR="$(export CRED_DESC="$candidate"; python3 - <<'PY'
+        if NEW_DIR="$(export CRED_DESC="$candidate"; "$PYTHON_BIN" - <<'PY'
 """下载最新代码包、校验 sha256、解压，并输出代码目录路径。"""
 import hashlib
 import json
@@ -214,4 +236,4 @@ fi
 log "启动 runner（代码目录 $CODE_DIR）"
 cd "$CODE_DIR"
 export PYTHONPATH="$CODE_DIR:$VENDOR_DIR${PYTHONPATH:+:$PYTHONPATH}"
-exec python3 -m ossbridge.runner "${RUN_ARGS[@]}" "$@"
+exec "$PYTHON_BIN" -m ossbridge.runner "${RUN_ARGS[@]}" "$@"
