@@ -33,7 +33,7 @@ from ossbridge.store import OssStore  # noqa: E402
 
 # 需要发布的文件（相对项目根目录）；测试一起带上，方便在远端直接自测
 INCLUDE_FILES = ["README.md", "README.zh-CN.md", "LICENSE", "pyproject.toml", "requirements.txt"]
-INCLUDE_DIRS = ["ossbridge", "test", "scripts", "examples"]
+INCLUDE_DIRS = ["ossbridge", "test", "scripts", "examples", "docs"]
 EXCLUDE_SUFFIX = (".pyc",)
 EXCLUDE_PARTS = ("__pycache__",)
 TOP_DIR = "oss-bridge"

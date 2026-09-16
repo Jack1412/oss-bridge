@@ -35,9 +35,9 @@ classifiers = [
 dependencies = ["oss2>=2.16.0"]
 
 [project.urls]
-Homepage = "https://github.com/OWNER/oss-bridge"
-Repository = "https://github.com/OWNER/oss-bridge"
-Issues = "https://github.com/OWNER/oss-bridge/issues"
+Homepage = "https://github.com/Jack1412/oss-bridge"
+Repository = "https://github.com/Jack1412/oss-bridge"
+Issues = "https://github.com/Jack1412/oss-bridge/issues"
 
 [project.scripts]
 oss-bridge-agent = "ossbridge.mcp_server:main"
